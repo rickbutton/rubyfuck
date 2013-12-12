@@ -3,9 +3,8 @@ require "rubyfuck/expression"
 module Rubyfuck::Optimizer
   class MultiIncDec
 
-    class State < Struct.new(:counting, :update, :new)
+    class State < Struct.new(:update, :new)
       def initialize
-        self.counting = false
         self.update = 0
         self.new = []
       end
@@ -48,7 +47,7 @@ module Rubyfuck::Optimizer
         end
       end
 
-      if state.counting
+      if state.update.nonzero?
         state.new << generate(state.update)
       end
 
@@ -58,22 +57,15 @@ module Rubyfuck::Optimizer
     private
 
     def handle_inc(e, state)
-      unless state.counting
-        state.counting = true
-      end
       state.update += 1
     end
 
     def handle_dec(e, state)
-      unless state.counting
-        state.counting = true
-      end
       state.update -= 1
     end
 
     def handle_tree(e, state)
-      if state.counting
-        state.counting = false
+      if state.update.nonzero?
         state.new << generate(state.update)
         state.update = 0
       end
@@ -81,8 +73,7 @@ module Rubyfuck::Optimizer
     end
 
     def handle_loop(e, state)
-      if state.counting
-        state.counting = false
+      if state.update.nonzero?
         state.new << generate(state.update)
         state.update = 0
       end
@@ -90,8 +81,7 @@ module Rubyfuck::Optimizer
     end
 
     def handle_other(e, state)
-      if state.counting
-        state.counting = false
+      if state.update.nonzero?
         state.new << generate(state.update)
         state.update = 0
       end
