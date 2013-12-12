@@ -3,6 +3,14 @@ require "rubyfuck/expression"
 module Rubyfuck::Optimizer
   class MultiIncDec
 
+    class State < Struct.new(:counting, :update, :new)
+      def initialize
+        self.counting = false
+        self.update = 0
+        self.new = []
+      end
+    end
+
     def optimize(node)
       optimize_tree(node)
     end
@@ -24,77 +32,70 @@ module Rubyfuck::Optimizer
     end
 
     def optimize_exprs(exprs)
-      counting = false
-      update = 0
-      new = []
+      state = State.new
       exprs.each do |e|
         case e
         when Rubyfuck::Expression::Inc
-          counting, update, new = handle_inc(e, counting, update, new)
+          handle_inc(e, state)
         when Rubyfuck::Expression::Dec
-          counting, update, new = handle_dec(e, counting, update, new)
+          handle_dec(e, state)
         when Rubyfuck::Expression::Tree
-          counting, update, new = handle_tree(e, counting, update, new)
+          handle_tree(e, state)
         when Rubyfuck::Expression::Loop
-          counting, update, new = handle_loop(e, counting, update, new)
+          handle_loop(e, state)
         else
-          counting, update, new = handle_other(e, counting, update, new)
+          handle_other(e, state)
         end
       end
 
-      if counting
-        new << generate(update)
+      if state.counting
+        state.new << generate(state.update)
       end
 
-      new
+      state.new
     end
 
     private
 
-    def handle_inc(e, counting, update, new)
-      unless counting
-        counting = true
+    def handle_inc(e, state)
+      unless state.counting
+        state.counting = true
       end
-      update += 1
-      [counting, update, new]
+      state.update += 1
     end
 
-    def handle_dec(e, counting, update, new)
-      unless counting
-        counting = true
+    def handle_dec(e, state)
+      unless state.counting
+        state.counting = true
       end
-      update -= 1
-      [counting, update, new]
+      state.update -= 1
     end
 
-    def handle_tree(e, counting, update, new)
-      if counting
-        counting = false
-        new << generate(update)
-        update = 0
+    def handle_tree(e, state)
+      if state.counting
+        state.counting = false
+        state.new << generate(state.update)
+        state.update = 0
       end
-      new << optimize_tree(e)
-      [counting, update, new]
+      state.new << optimize_tree(e)
     end
 
-    def handle_loop(e, counting, update, new)
-      if counting
-        counting = false
-        new << generate(update)
-        update = 0
+    def handle_loop(e, state)
+      if state.counting
+        state.counting = false
+        state.new << generate(state.update)
+        state.update = 0
       end
-      new << optimize_loop(e)
-      [counting, update, new]
+      state.new << optimize_loop(e)
     end
 
-    def handle_other(e, counting, update, new)
-      if counting
-        counting = false
-        new << generate(update)
-        update = 0
+    def handle_other(e, state)
+      if state.counting
+        state.counting = false
+        state.new << generate(state.update)
+        state.update = 0
       end
-      new << e
-      [counting, update, new]
+      state.new << e
     end
 
     def generate(update)
