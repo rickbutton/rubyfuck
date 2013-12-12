@@ -1,0 +1,91 @@
+require "rubyfuck/expression"
+require "pry"
+
+grammar Brainfuck
+  rule tree
+    (loop / next / prev / inc / dec / in / out / ignored)* {
+      def to_ast
+        exprs = elements.map do |e|
+          unless e.respond_to? :to_ast
+            binding.pry
+          end
+          e.to_ast
+        end
+        Rubyfuck::Expression::Tree.new(exprs)
+      end
+    }
+  end
+
+  rule ignored
+    !(begin_loop / end_loop / next / prev / inc / dec / in / out) . {
+      def to_ast
+        Rubyfuck::Expression::Ignore.new
+      end
+    }
+  end
+
+  rule loop
+    begin_loop tree end_loop {
+      def to_ast
+        Rubyfuck::Expression::Loop.new(tree.to_ast)
+      end
+    }
+  end
+
+
+  rule begin_loop
+    "["
+  end
+
+  rule end_loop
+    "]"
+  end
+
+  rule next
+    ">" {
+      def to_ast
+        Rubyfuck::Expression::Next.new
+      end
+    }
+  end
+
+  rule prev
+    "<" {
+      def to_ast
+        Rubyfuck::Expression::Prev.new
+      end
+    }
+  end
+
+  rule inc
+    "+" {
+      def to_ast
+        Rubyfuck::Expression::Inc.new
+      end
+    }
+  end
+
+  rule dec
+    "-" {
+      def to_ast
+        Rubyfuck::Expression::Dec.new
+      end
+    }
+  end
+
+  rule in
+    "," {
+      def to_ast
+        Rubyfuck::Expression::In.new
+      end
+    }
+  end
+
+  rule out
+    "." {
+      def to_ast
+        Rubyfuck::Expression::Out.new
+      end
+    }
+  end
+end

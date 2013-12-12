@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require "rubyfuck"
+require "rubyfuck/cli"
+
+Rubyfuck::CLI.new(ARGV).start
