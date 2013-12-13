@@ -18,8 +18,6 @@ module Rubyfuck
 
       optimized = Rubyfuck::Optimizer.optimize(ast, @options)
 
-      binding.pry
-
       if @options.language
         puts Rubyfuck::Compiler.compile(optimized, @options.language)
       else

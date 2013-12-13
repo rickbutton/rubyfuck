@@ -1,6 +1,13 @@
 module Rubyfuck
   module Compiler
+
+    C_HEADER = 
+      "#include <stdio.h>\nint main() {\nchar array[30000];\nchar *ptr = array;\n"
+
+    VALID_LANGS = [:c]
+
     def self.compile(ast, lang)
+      raise "invalid language #{lang}" unless VALID_LANGS.include? lang
       header(ast, lang) + body(ast, lang) + footer(ast, lang)
     end
 
@@ -8,10 +15,8 @@ module Rubyfuck
       
       def self.header(ast, lang)
         case lang
-        when :bf
-          ""
         when :c
-          "#include <stdio.h>\nint main() {\n char array[30000]; char *ptr = array;\n"
+          C_HEADER
         end
       end
 
