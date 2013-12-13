@@ -3,7 +3,7 @@ Dir[File.join(File.dirname(__FILE__), "optimizer", "*")].each { |f| require f }
 module Rubyfuck
   module Optimizer
 
-    OPTS = [MultiIncDec, MultiMove]
+    OPTS = [FirstPass, SecondPass, ThirdPass]
 
     def self.optimize(tree)
       OPTS.each do |o|

@@ -10,6 +10,24 @@ module Rubyfuck::Expression
       exprs.each { |e| str += e.to_bf }
       str
     end
+
+    def to_c
+      str = ""
+      exprs.each { |e| str += e.to_c }
+      str
+    end
+
+    def length
+      sum = 0
+      exprs.each do |e|
+        if e.respond_to? :length
+          sum += e.length
+        else
+          sum += 1
+        end
+      end
+      sum
+    end
   end
 
   class Loop < Struct.new(:tree)
@@ -19,6 +37,14 @@ module Rubyfuck::Expression
 
     def to_bf
       "[#{tree.to_bf}]"
+    end
+
+    def to_c
+      "while (*ptr) {\n#{tree.to_c}}\n"
+    end
+
+    def length
+      tree.length
     end
   end
 
@@ -30,6 +56,10 @@ module Rubyfuck::Expression
     def to_bf
       ">"
     end
+
+    def to_c
+      "++ptr;\n"
+    end
   end
 
   class Prev
@@ -39,6 +69,10 @@ module Rubyfuck::Expression
 
     def to_bf
       "<"
+    end
+
+    def to_c
+      "--ptr;\n"
     end
   end
 
@@ -50,6 +84,10 @@ module Rubyfuck::Expression
     def to_bf
       "+"
     end
+
+    def to_c
+      "++*ptr;\n"
+    end
   end
 
   class Dec
@@ -59,6 +97,10 @@ module Rubyfuck::Expression
 
     def to_bf
       "-"
+    end
+
+    def to_c
+      "--*ptr;\n"
     end
   end
 
@@ -70,6 +112,10 @@ module Rubyfuck::Expression
     def to_bf
       ","
     end
+
+    def to_c
+      "*ptr = getchar();\n"
+    end
   end
 
   class Out
@@ -80,6 +126,10 @@ module Rubyfuck::Expression
     def to_bf
       "."
     end
+
+    def to_c
+      "putchar(*ptr);\n"
+    end
   end
 
   class Ignore
@@ -87,6 +137,10 @@ module Rubyfuck::Expression
     end
 
     def to_bf
+      ""
+    end
+
+    def to_c
       ""
     end
   end
@@ -106,6 +160,10 @@ module Rubyfuck::Expression
         ""
       end
     end
+
+    def to_c
+      "*ptr += #{change};\n"
+    end
   end
 
   class MultiMove < Struct.new(:change)
@@ -122,12 +180,17 @@ module Rubyfuck::Expression
         ""
       end
     end
+
+    def to_c
+      "ptr += #{change};\n"
+    end
   end
 
   class MultiUpdateAt < Struct.new(:at, :change)
     def run(runtime)
       p = runtime.p + at
-      runtime.mem[p] += change
+      mem = runtime.mem
+      mem[p] += change
     end
 
     def to_bf
@@ -138,7 +201,11 @@ module Rubyfuck::Expression
       else
         ""
       end
-      "#{">" * at}#{str}#{"<" * at}"
+      "#{">" * at.abs}#{str}#{"<" * at.abs}"
+    end
+
+    def to_c
+      "ptr[#{at}] += #{change};\n"
     end
   end
 end

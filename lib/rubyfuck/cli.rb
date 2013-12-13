@@ -1,12 +1,14 @@
+require "rubyfuck/options"
+
 module Rubyfuck
   class CLI
 
     def initialize(args)
-      @file_name = args.first
+      @options = Options.parse(args)
     end
 
     def start
-      file = File.open(@file_name)
+      file = File.open(@options[:file])
 
       parser = Rubyfuck::Parser.new
 
@@ -14,11 +16,19 @@ module Rubyfuck
 
       ast = tree.to_ast
 
+      binding.pry
+
       optimized = Rubyfuck::Optimizer.optimize(ast)
 
-      interpreter = Rubyfuck::Interpreter.new
+      binding.pry
 
-      interpreter.run(optimized)
+      if @options.language
+        puts Rubyfuck::Compiler.compile(optimized, @options.language)
+      else
+        interpreter = Rubyfuck::Interpreter.new
+        interpreter.run(optimized)
+      end
+
     end
   end
 end
