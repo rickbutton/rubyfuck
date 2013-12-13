@@ -16,16 +16,14 @@ module Rubyfuck
 
       ast = tree.to_ast
 
-      binding.pry
-
-      optimized = Rubyfuck::Optimizer.optimize(ast)
+      optimized = Rubyfuck::Optimizer.optimize(ast, @options)
 
       binding.pry
 
       if @options.language
         puts Rubyfuck::Compiler.compile(optimized, @options.language)
       else
-        interpreter = Rubyfuck::Interpreter.new
+        interpreter = Rubyfuck::Interpreter.new(@options)
         interpreter.run(optimized)
       end
 

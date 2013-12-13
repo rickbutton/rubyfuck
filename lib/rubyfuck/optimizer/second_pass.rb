@@ -1,8 +1,9 @@
 module Rubyfuck::Optimizer
   class SecondPass
     
-    class State < Struct.new(:move, :update, :new)
+    class State < Struct.new(:direction, :move, :update, :new)
       def initialize
+        self.direction = nil
         self.move = nil
         self.update = nil
         self.new = []
@@ -62,18 +63,21 @@ module Rubyfuck::Optimizer
     def handle_move(e, state)
       if state.move
         if state.move.change == -e.change
-          state.new << generate(state.move, state.update)
+          state.new << generate(state.move, state.update, state.direction)
           state.move = nil
           state.update = nil
+          state.direction = nil
         else
           state.new << state.move
           state.new << state.update
           state.new << e
           state.move = nil
           state.update = nil
+          state.direction = nil
         end
       else
         state.move = e
+        state.direction = e.change > 0 ? :forward : :backward
       end
     end
 
@@ -95,6 +99,9 @@ module Rubyfuck::Optimizer
         state.new << state.update
         state.update = nil
       end
+
+
+      state.direction = nil
       state.new << optimize_tree(e)
     end
 
@@ -108,6 +115,8 @@ module Rubyfuck::Optimizer
         state.new << state.update
         state.update = nil
       end
+
+      state.direction = nil
       state.new << optimize_loop(e)
     end
 
@@ -122,11 +131,16 @@ module Rubyfuck::Optimizer
         state.update = nil
       end
 
+      state.direction = nil
       state.new << e
     end
 
-    def generate(move, update)
-      Rubyfuck::Expression::MultiUpdateAt.new(move.change, update.change)
+    def generate(move, update, direction)
+      Rubyfuck::Expression::MultiUpdateAt.new(
+        move.change, 
+        update.change, 
+        direction
+      )
     end
   end
 end

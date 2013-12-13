@@ -5,8 +5,11 @@ module Rubyfuck
 
     OPTS = [FirstPass, SecondPass, ThirdPass]
 
-    def self.optimize(tree)
-      OPTS.each do |o|
+    def self.optimize(tree, options)
+      passes = options.passes
+      passes = OPTS.length if passes < 0
+
+      OPTS[0...passes].each do |o|
         tree = o.new.optimize(tree) 
       end
       tree

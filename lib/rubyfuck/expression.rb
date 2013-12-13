@@ -5,12 +5,6 @@ module Rubyfuck::Expression
       exprs.each { |e| e.run(runtime) }
     end
 
-    def to_bf
-      str = ""
-      exprs.each { |e| str += e.to_bf }
-      str
-    end
-
     def to_c
       str = ""
       exprs.each { |e| str += e.to_c }
@@ -35,10 +29,6 @@ module Rubyfuck::Expression
       tree.run(runtime) until runtime.val == 0
     end
 
-    def to_bf
-      "[#{tree.to_bf}]"
-    end
-
     def to_c
       "while (*ptr) {\n#{tree.to_c}}\n"
     end
@@ -53,10 +43,6 @@ module Rubyfuck::Expression
       runtime.p += 1
     end
 
-    def to_bf
-      ">"
-    end
-
     def to_c
       "++ptr;\n"
     end
@@ -65,10 +51,6 @@ module Rubyfuck::Expression
   class Prev
     def run(runtime)
       runtime.p -= 1
-    end
-
-    def to_bf
-      "<"
     end
 
     def to_c
@@ -81,10 +63,6 @@ module Rubyfuck::Expression
       runtime.val += 1
     end
 
-    def to_bf
-      "+"
-    end
-
     def to_c
       "++*ptr;\n"
     end
@@ -95,10 +73,6 @@ module Rubyfuck::Expression
       runtime.val -= 1
     end
 
-    def to_bf
-      "-"
-    end
-
     def to_c
       "--*ptr;\n"
     end
@@ -106,11 +80,12 @@ module Rubyfuck::Expression
 
   class In
     def run(runtime)
-      raise "no input implemented"
-    end
-
-    def to_bf
-      ","
+      begin
+        system("stty raw -echo")
+        getc
+      ensure
+        system("stty -raw echo")
+      end
     end
 
     def to_c
@@ -123,10 +98,6 @@ module Rubyfuck::Expression
       putc runtime.val.chr
     end
 
-    def to_bf
-      "."
-    end
-
     def to_c
       "putchar(*ptr);\n"
     end
@@ -134,10 +105,6 @@ module Rubyfuck::Expression
 
   class Ignore
     def run(runtime)
-    end
-
-    def to_bf
-      ""
     end
 
     def to_c
@@ -151,16 +118,6 @@ module Rubyfuck::Expression
       runtime.val += change
     end
 
-    def to_bf
-      if change > 0
-        "+" * change
-      elsif change < 0
-        "-" * -change
-      else
-        ""
-      end
-    end
-
     def to_c
       "*ptr += #{change};\n"
     end
@@ -171,41 +128,41 @@ module Rubyfuck::Expression
       runtime.p += change
     end
 
-    def to_bf
-      if change > 0
-        ">" * change
-      elsif change < 0
-        "<" * -change
-      else
-        ""
-      end
-    end
-
     def to_c
       "ptr += #{change};\n"
     end
   end
 
-  class MultiUpdateAt < Struct.new(:at, :change)
+  class MultiUpdateAt < Struct.new(:at, :change, :direction)
     def run(runtime)
-      p = runtime.p + at
-      mem = runtime.mem
-      mem[p] += change
-    end
-
-    def to_bf
-      if change > 0
-        str = "+" * change
-      elsif change < 0
-        str = "-" * -change
-      else
-        ""
-      end
-      "#{">" * at.abs}#{str}#{"<" * at.abs}"
+      runtime.set_val_at_offset(at, runtime.val_at_offset(at) + change)
     end
 
     def to_c
       "ptr[#{at}] += #{change};\n"
+    end
+  end
+  
+  class Assign < Struct.new(:offset, :change)
+    def run(runtime)
+      runtime.set_val_at_offset(offset, change)
+    end
+
+    def to_c
+      "ptr[#{offset}] = #{change};\n"
+    end
+  end
+
+  class MultiplyAdd < Struct.new(:src, :dest, :value)
+    def run(runtime)
+      runtime.set_val_at_offset(
+        dest,
+        runtime.val_at_offset(dest) + runtime.val_at_offset(src) * value
+      )
+    end
+
+    def to_c
+      "ptr[#{dest}] += ptr[#{src}] * #{value};\n"
     end
   end
 end
